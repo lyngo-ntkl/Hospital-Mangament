@@ -106,3 +106,52 @@ CREATE TABLE PatientTest
 	CONSTRAINT CHK_PATIENTTEST_DOCTOR CHECK(doctorID LIKE 'D[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
 )
 
+DROP TABLE IF EXISTS Medicine;
+CREATE TABLE Medicine
+(
+	medicineID INT,
+	medicineName VARCHAR(50),
+	medicineType VARCHAR(50),
+	medicineCost INT,
+	description VARCHAR(200),
+	CONSTRAINT PK_MEDICINE PRIMARY KEY(medicineID)
+)
+
+DROP TABLE IF EXISTS Treatment ;
+CREATE TABLE Treatment 
+(
+	treatmentID INT,
+	patientTestID INT,
+	treatmentDescription VARCHAR(200),
+	doctorID VARCHAR(10),
+	caringID INT,
+	surgery VARCHAR(50),
+	cost INT,
+	CONSTRAINT PK_TREATMENT PRIMARY KEY(treatmentID),
+	CONSTRAINT FK_TREATMENT_PATIENT FOREIGN KEY(patientTestID) REFERENCES PatientTest(patientTestID),
+	CONSTRAINT FK_TREATMENT_DOCTOR FOREIGN KEY(doctorID) REFERENCES Doctor(doctorID),
+	CONSTRAINT FK_TREATMENT_CARING FOREIGN KEY(caringID) REFERENCES Caring(caringID),
+	CONSTRAINT CHK_PATIENTTEST_DOCTOR CHECK(doctorID LIKE 'D[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+)
+
+DROP TABLE IF EXISTS Prescription;
+CREATE TABLE Prescription 
+(
+	prescriptionID INT,
+	medicalHistoryID INT,
+	treatmentID INT,
+	description VARCHAR(200),
+	totalAmount INT,
+	CONSTRAINT PK_PRESCRIPTION PRIMARY KEY(prescriptionID)
+)
+
+DROP TABLE IF EXISTS PrescriptionMedicine;
+CREATE TABLE PrescriptionMedicine 
+(
+	prescriptionID INT,
+	medicineID INT,
+	description VARCHAR(200)
+	CONSTRAINT PK_PRESCRIPTIONMEDICINE PRIMARY KEY(prescriptionID, medicineID)
+)
+
+
