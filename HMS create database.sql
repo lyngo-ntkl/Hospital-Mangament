@@ -1,3 +1,6 @@
+
+Use master
+Go
 DROP DATABASE IF EXISTS HospitalManagement;
 CREATE DATABASE HospitalManagement
 GO
@@ -7,43 +10,91 @@ GO
 
 DROP TABLE IF EXISTS Hospital;
 CREATE TABLE Hospital(
-	hospitalID INT,
-	hospitalName NVARCHAR(50),
-	hospitalAddress NVARCHAR(200),
+	hospitalID      INT,
+	hospitalName    NVARCHAR(50),
+	Address         NVARCHAR(200),
 	CONSTRAINT PK_HOSPITAL PRIMARY KEY(hospitalID)
 )
+GO
 
---DROP TABLE IF EXISTS HospitalContact;
---CREATE TABLE HospitalContact(
---	contactID INT,
-	--hospitalID INT,
-
---)
-
-DROP TABLE IF EXISTS Doctor;
-CREATE TABLE Doctor(
-	doctorID VARCHAR(10),
-	firstName NVARCHAR(50),
-	middleName NVARCHAR(50),
-	lastName NVARCHAR(50),
-	birthDate Date,
-	address NVARCHAR(210),
-	gender CHAR,
-	
-	CONSTRAINT PK_DOCTOR PRIMARY KEY(doctorID),
-	CONSTRAINT CHK_DOCTOR_GENDER CHECK(GENDER='M' OR GENDER='F'),
-	CONSTRAINT CHK_DOCTOR_ID CHECK(doctorID LIKE 'D[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+DROP TABLE IF EXISTS Contact;
+CREATE TABLE Contact(
+	contactID       INT,
+	hospitalID      INT,
+	phone           INT UNIQUE,
+	CONSTRAINT PK_Contact PRIMARY KEY(contactID),
+	CONSTRAINT FK_Contact FOREIGN KEY(hospitalID) REFERENCES Hospital(hospitalID),
 )
+GO
+
+DROP TABLE IF EXISTS Device;
+CREATE TABLE Device(
+	deviceID      INT,
+	hospitalID    INT,
+	Name          NVARCHAR(50),
+	Type          NVARCHAR(50),
+	Quantity      INT,
+	Available     INT,
+	CONSTRAINT PK_Device PRIMARY KEY(deviceID),
+	CONSTRAINT FK_Device FOREIGN KEY(hospitalID) REFERENCES Hospital(hospitalID),
+)
+go
 
 DROP TABLE IF EXISTS Department;
 CREATE TABLE Department(
-	DepartmentID int,
-	DepartmentName nvarchar(120),
-	ManagerID varchar(20),
-	StartDate Date,
-	CONSTRAINT PK_DEPARTMENT PRIMARY KEY(DepartmentID),
-	CONSTRAINT UQ_DEPARTMENT UNIQUE(ManagerID)
+	DepartmentID      INT,
+	DepartmentName    NVARCHAR(50),
+	ManagerID         VARCHAR(10),
+	StartDate         Date,
+	CONSTRAINT PK_DEPARTMENT PRIMARY KEY(DepartmentID)
 )
+go
+DROP TABLE IF EXISTS Doctor;
+CREATE TABLE Doctor(
+	doctorID         VARCHAR(10),
+	departmentID     INT,
+	bdate            DATE,
+	Name             NVARCHAR(50),
+	address          NVARCHAR(255),
+	gender           CHAR,
+	phone            INT,
+	CONSTRAINT PK_DOCTOR PRIMARY KEY(doctorID),
+	CONSTRAINT FK_DOCTOR FOREIGN KEY(departmentID) REFERENCES DEPARTMENT(departmentID),
+	CONSTRAINT CHK_DOCTOR_GENDER CHECK(gender='M' OR gender='F'),
+	CONSTRAINT CHK_DOCTOR_ID CHECK(doctorID LIKE 'D%[^0-9]%')
+)
+go
+Alter table Department
+add constraint FK_DEPART foreign key(ManagerID) references Doctor(doctorID);
+go
+
+DROP TABLE IF EXISTS Room;
+CREATE TABLE Room(
+	roomID         INT,
+	ManagerID      VARCHAR(10),
+	DepartmentID   INT,
+	rtype          NVARCHAR(50),
+	Status         NVARCHAR(50),
+	room_cost      INT
+	CONSTRAINT PK_ROOM PRIMARY KEY(roomID),
+	CONSTRAINT FK_ROOM FOREIGN KEY(DepartmentID) references Department(DepartmentID)
+)
+GO
+DROP TABLE IF EXISTS Nurse;
+CREATE TABLE Nurse(
+	nurseID          VARCHAR(10),
+	roomID           INT,
+	bdate            DATE,
+	Name             NVARCHAR(50),
+	address          NVARCHAR(255),
+	gender           CHAR,
+	phone            INT,
+	CONSTRAINT PK_NURSE PRIMARY KEY(nurseID),
+	CONSTRAINT FK_NURSE FOREIGN KEY(roomID) REFERENCES Room(roomID),
+	CONSTRAINT CHK_NURSE_GENDER CHECK(gender='M' OR gender='F'),
+	CONSTRAINT CHK_NURSE_ID CHECK(nurseID LIKE 'N%[^0-9]%')
+)
+GO
 
 DROP TABLE IF EXISTS Patient;
 CREATE TABLE Patient(
@@ -58,9 +109,69 @@ CREATE TABLE Patient(
 	phoneNumber VARCHAR(20),
 	CONSTRAINT PK_PATIENT PRIMARY KEY(patientID),
 	CONSTRAINT CHK_PATIENT_GENDER CHECK(gender='M' OR gender='F'),
-	CONSTRAINT CHK_PATIENT_PHONE CHECK(phoneNumber NOT LIKE '%[^0-9]%')
+	CONSTRAINT CHK_PATIENT_PHONE CHECK(phoneNumber LIKE '%[^0-9]%')
 )
 GO
+
+go
+ALTER TABLE Room
+ADD CONSTRAINT FK_Room foreign key(ManagerID) references Nurse(nurseID);
+go
+
+
+DROP TABLE IF EXISTS Appointment;
+CREATE TABLE Appointment(
+	AppointmentID     INT,
+	patientID         INT,
+	doctorID          VARCHAR(10),
+	number            INT,
+	type              NVARCHAR(50),
+	date              DateTime,
+	description       NVARCHAR(255),
+	CONSTRAINT PK_Appointment PRIMARY KEY(AppointmentID),
+	CONSTRAINT FK_Appointment_01 FOREIGN KEY(patientID) REFERENCES Patient(patientID),
+	CONSTRAINT FK_Appointment_02 FOREIGN KEY(doctorID) REFERENCES Doctor(doctorID)
+);
+
+GO
+
+DROP TABLE IF EXISTS Insurance;
+CREATE TABLE Insurance(
+	insuranceID     INT,
+	patientID       INT,
+	policy_no       NVARCHAR(50),
+	publish_date    DATE,
+	expire_date     DATE,
+	CONSTRAINT PK_Insurance PRIMARY KEY(insuranceID),
+	CONSTRAINT FK_Insurance FOREIGN KEY(patientID) REFERENCES Patient(patientID),
+	CONSTRAINT CY_Insurance CHECK(YEAR(publish_date)<= YEAR(GETDATE()))
+);
+
+GO
+DROP TABLE IF EXISTS DiscountFee;
+CREATE TABLE DiscountFee(
+	discountID   INT,
+	insuranceID  INT,
+	discount     INT,
+	CONSTRAINT PK_Discount PRIMARY KEY(discountID),
+	CONSTRAINT FK_Discount FOREIGN KEY(insuranceID) REFERENCES Insurance(insuranceID)
+);
+
+GO
+
+DROP TABLE IF EXISTS Caring;
+CREATE TABLE Caring(
+	caringID      INT,
+	nurseID       VARCHAR(10),
+	roomID        INT,
+	number_of_day INT,
+	caring_cost   INT,
+	CONSTRAINT PK_CARING PRIMARY KEY(caringID),
+	CONSTRAINT FK_CARING_01 FOREIGN KEY(nurseID) REFERENCES Nurse(nurseID),
+	CONSTRAINT FK_CARING_02 FOREIGN KEY(roomID) REFERENCES Room(roomID)
+);
+
+Go
 
 DROP TABLE IF EXISTS MedicalHistory;
 CREATE TABLE MedicalHistory
@@ -88,6 +199,8 @@ CREATE TABLE Test
 	CONSTRAINT PK_TEST PRIMARY KEY(testID)
 )
 
+GO
+
 DROP TABLE IF EXISTS PatientTest;
 CREATE TABLE PatientTest
 (
@@ -105,6 +218,7 @@ CREATE TABLE PatientTest
 	CONSTRAINT FK_PATIENTTEST_TEST FOREIGN KEY(testID) REFERENCES Test(testID),
 	CONSTRAINT CHK_PATIENTTEST_DOCTOR CHECK(doctorID LIKE 'D[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
 )
+GO
 
 DROP TABLE IF EXISTS Medicine;
 CREATE TABLE Medicine
@@ -117,6 +231,7 @@ CREATE TABLE Medicine
 	CONSTRAINT PK_MEDICINE PRIMARY KEY(medicineID)
 )
 
+Go
 DROP TABLE IF EXISTS Treatment ;
 CREATE TABLE Treatment 
 (
@@ -133,7 +248,7 @@ CREATE TABLE Treatment
 	CONSTRAINT FK_TREATMENT_CARING FOREIGN KEY(caringID) REFERENCES Caring(caringID),
 	CONSTRAINT CHK_PATIENTTEST_DOCTOR CHECK(doctorID LIKE 'D[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
 )
-
+GO
 DROP TABLE IF EXISTS Prescription;
 CREATE TABLE Prescription 
 (
@@ -147,6 +262,8 @@ CREATE TABLE Prescription
 	CONSTRAINT FK_PRESCRIPTION_TREATMENT FOREIGN KEY(treatmentID) REFERENCES Treatment(treatmentID)
 )
 
+GO
+
 DROP TABLE IF EXISTS PrescriptionMedicine;
 CREATE TABLE PrescriptionMedicine 
 (
@@ -157,20 +274,5 @@ CREATE TABLE PrescriptionMedicine
 	CONSTRAINT FK_PRESCRIPTIONMEDICINE_PRESCRIPTION FOREIGN KEY(prescriptionID) REFERENCES Prescription(prescriptionID),
 	CONSTRAINT FK_PRESCRIPTIONMEDICINE_MEDICINE FOREIGN KEY(medicineID) REFERENCES Medicine(medicineID)
 )
-	
-DROP TABLE IF EXISTS Bill;
-CREATE TABLE Bill
-(
-	billID INT,
-	patientID INT,
-	treatmentID INT,
-	prescriptionID INT,
-	insurranceNo INT,
-	totalBill INT
-	CONSTRAINT PK_BILL PRIMARY KEY(billID),
-	CONSTRAINT FK_BILL_PATIENT FOREIGN KEY(patientID) REFERENCES Patient(patientID),
-	CONSTRAINT FK_BILL_TREATMENT FOREIGN KEY(treatmentID) REFERENCES Treatment(treatmentID),
-	CONSTRAINT FK_BILL_PRESCRIPTION FOREIGN KEY(prescriptionID) REFERENCES Prescription(prescriptionID),
-	CONSTRAINT FK_BILL_INSURRANCE FOREIGN KEY(insurranceNo) REFERENCES Insurrance(insurranceID)
-)
+
 
